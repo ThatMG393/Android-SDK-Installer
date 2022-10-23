@@ -1,0 +1,12 @@
+# Empty lmao
+
+.gradle
+.vscode
+
+!gradle-wrapper.jar
+
+app/build
+app/bin
+
+dist
+

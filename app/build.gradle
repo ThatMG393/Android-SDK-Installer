@@ -1,0 +1,64 @@
+/* groovylint-disable JavaIoPackageAccess */
+plugins {
+    // Apply the application plugin to add support for building a CLI application in Java.
+    id 'application'
+}
+
+group 'com.thatmg393'
+version genVer('debug')
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+}
+
+dependencies {
+    // Put your dependency here
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'com.thatmg393.android.sdk.installer.App'
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+String genVer(String flavor) {
+    Properties prop = new Properties()
+    File propFile = new File('.properties')
+    if (!propFile.exists()) { propertiesFile.createNewFile() }
+    propFile.withInputStream { properties.load(it) }
+
+    if (flavor == 'debug') {
+        return "${prop.getProperty('build.all.majVer')}.${getCommitCount()}"
+    } else if (flavor == 'release') {
+        int minVer = prop['build.release.minVer'].toInteger()
+        if (minVer >= 10) {
+            prop['build.release.minVer'] = "0"
+            prop['build.all.majVer'] = String.parseInt(((int)prop['build.all.majVer'].toInteger() + 1))
+        } else {
+            prop['build.release.minVer'] = String.parseInt(((int)prop['build.release.minVer'].toInteger() + 1))
+        }
+        prop.store(new FileOutputStream(propFile), null);
+
+        return "${prop.getProperty('build.all.majVer')}.${prop.getProperty('build.release.minVer')}"
+    } else {
+        throw new GradleException('Invalid build flavor! Can only be (debug|release)')
+    }
+    return null
+}
+
+String getCommitCount() {
+    def baos = new ByteArrayOutputStream() 
+    exec { // Get commit count
+        commandLine "git", "rev-list", "--count", "${getLatestCommitHash()}"
+        standardOutput = baos
+    }
+    return baos.toString().trim()
+}
